@@ -1,0 +1,28 @@
+from collections import defaultdict
+
+def group_sequences_by_length(sequences, length_bins=[100, 500, 1000, 5000, 10000, 20000]):
+    """Group sequences into bins based on length"""
+    grouped = defaultdict(list)
+    
+    for seq_id, seq in sequences:
+        seq_len = len(seq)
+        
+        # Find appropriate bin
+        bin_idx = 0
+        for i, bin_size in enumerate(length_bins):
+            if seq_len <= bin_size:
+                bin_idx = i
+                break
+        else:
+            bin_idx = len(length_bins)
+        
+        grouped[bin_idx].append((seq_id, seq))
+    
+    return grouped
+
+# Group sequences
+grouped_sequences = group_sequences_by_length(sequences)
+
+print("Sequence distribution by length:")
+for bin_idx, seqs in sorted(grouped_sequences.items()):
+    print(f"Bin {bin_idx}: {len(seqs)} sequences")
