@@ -1,0 +1,27 @@
+!pip install biopython
+!pip install fair-esm
+!pip install h5py
+!pip install SeqIO
+
+#Import libraries
+
+import torch
+from Bio import SeqIO
+import esm
+import numpy as np
+from pathlib import Path
+import gc
+import pickle
+import time
+import os
+from tqdm import tqdm
+import shutil
+import json
+
+original_torch_load = torch.load
+
+def patched_torch_load(*args, **kwargs):
+    kwargs.setdefault('weights_only', False)
+    return original_torch_load(*args, **kwargs)
+
+torch.load = patched_torch_load
