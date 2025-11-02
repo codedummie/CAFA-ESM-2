@@ -1,0 +1,20 @@
+# Define output directory
+output_dir = "/extracted_embds/EMS2-embeddings/" #change output directory
+
+# Try to load previous progress
+print("Checking for previous progress...")
+metadata, all_embeddings = load_progress(output_dir)
+
+if metadata:
+    print(f"✓ Found previous progress!")
+    print(f"  Last completed bin: {metadata['last_bin']}")
+    print(f"  Sequences processed: {metadata['processed_sequences']}/{metadata['total_sequences']}")
+    print(f"  Timestamp: {metadata['timestamp']}")
+    start_bin = metadata['last_bin'] + 1
+    processed_sequences = metadata['processed_sequences']
+    print(f"\nResuming from Bin {start_bin}...")
+else:
+    print("No previous progress found. Starting fresh...")
+    all_embeddings = {}
+    start_bin = 0
+    processed_sequences = 0
