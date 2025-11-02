@@ -1,0 +1,49 @@
+def save_embeddings(embeddings_dict, output_dir, bin_idx=None, is_cumulative=False, is_final=False):
+    """
+    Save embeddings with proper naming, using temporary local storage
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    if is_final:
+        filename = "embeddings_final"
+    elif is_cumulative:
+        filename = "embeddings_cumulative"
+    elif bin_idx is not None:
+        filename = f"embeddings_bin_{bin_idx}"
+    else:
+        filename = "embeddings"
+    
+    # Use temporary local directory
+    temp_dir = "/tmp/embeddings_temp"
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    try:
+        # Save to local temp first
+        temp_pkl = os.path.join(temp_dir, f"{filename}.pkl")
+        temp_npz = os.path.join(temp_dir, f"{filename}.npz")
+        
+        # Save as pickle
+        with open(temp_pkl, 'wb') as f:
+            pickle.dump(embeddings_dict, f)
+        
+        # Save as compressed numpy
+        np.savez_compressed(temp_npz, **embeddings_dict)
+        
+        # Move to final destination
+        final_pkl = os.path.join(output_dir, f"{filename}.pkl")
+        final_npz = os.path.join(output_dir, f"{filename}.npz")
+        
+        shutil.copy2(temp_pkl, final_pkl)
+        shutil.copy2(temp_npz, final_npz)
+        
+        # Clean up temp files
+        os.remove(temp_pkl)
+        os.remove(temp_npz)
+        
+        return final_pkl, final_npz
+        
+    except Exception as e:
+        print(f"Error during save: {e}")
+        # Keep temp files for debugging
+        print(f"Temp files kept at: {temp_dir}")
+        raise
