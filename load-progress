@@ -1,0 +1,42 @@
+def load_progress(output_dir):
+    """
+    Load previous progress if exists
+    Handles network drive issues by copying to local temp first
+    """
+    metadata_path = os.path.join(output_dir, "progress_metadata.pkl")
+    cumulative_path = os.path.join(output_dir, "embeddings_cumulative.pkl")
+    
+    if os.path.exists(metadata_path) and os.path.exists(cumulative_path):
+        try:
+            # Try direct loading first
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+            with open(cumulative_path, 'rb') as f:
+                embeddings = pickle.load(f)
+            return metadata, embeddings
+        except (OSError, IOError) as e:
+            print(f"Direct loading failed: {e}")
+            print("Trying to copy to local temp first...")
+            
+            # Copy to local temp and load from there
+            temp_dir = os.path.expanduser("~/tmp/embeddings_temp")
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            temp_metadata = os.path.join(temp_dir, "progress_metadata.pkl")
+            temp_cumulative = os.path.join(temp_dir, "embeddings_cumulative.pkl")
+            
+            shutil.copy2(metadata_path, temp_metadata)
+            shutil.copy2(cumulative_path, temp_cumulative)
+            
+            with open(temp_metadata, 'rb') as f:
+                metadata = pickle.load(f)
+            with open(temp_cumulative, 'rb') as f:
+                embeddings = pickle.load(f)
+            
+            # Cleanup
+            os.remove(temp_metadata)
+            os.remove(temp_cumulative)
+            
+            return metadata, embeddings
+    
+    return None, {}
