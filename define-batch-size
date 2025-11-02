@@ -1,0 +1,15 @@
+# Process each group with appropriate batch size
+batch_sizes = {
+    0: 64,   # Short sequences (<=100 aa)
+    1: 16,   # Medium sequences (<=500 aa)
+    2: 8,    # Long sequences (<=1000 aa)
+    3: 4,    # Very long sequences (<=5000 aa)
+    4: 2,    # Extremely long sequences (<=10000 aa)
+    5: 1,    # Ultra long sequences (<=20000 aa)
+    6: 1     # Longest sequences (>20000 aa)
+}
+
+total_sequences = sum(len(seqs) for seqs in grouped_sequences.values())
+
+print(f"Total sequences to process: {total_sequences}")
+print("="*80)
