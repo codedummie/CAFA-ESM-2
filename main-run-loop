@@ -1,0 +1,83 @@
+for bin_idx, seqs in sorted(grouped_sequences.items()):
+    # Skip already processed bins
+    if bin_idx < start_bin:
+        print(f"Skipping Bin {bin_idx} (already processed)")
+        continue
+    
+    batch_size = batch_sizes.get(bin_idx, 1)
+    total_batches = (len(seqs) + batch_size - 1) // batch_size
+    
+    print(f"\n{'='*80}")
+    print(f"BIN {bin_idx}: Processing {len(seqs)} sequences")
+    print(f"Batch size: {batch_size} | Total batches: {total_batches}")
+    print(f"{'='*80}\n")
+    
+    start_time = time.time()
+    
+    try:
+        # Extract embeddings for this bin
+        embeddings = extract_embeddings_batch_with_progress(
+            seqs, 
+            model, 
+            batch_converter, 
+            device, 
+            batch_size=batch_size
+        )
+        
+        elapsed_time = time.time() - start_time
+        processed_sequences += len(seqs)
+        
+        # Add to main dictionary
+        all_embeddings.update(embeddings)
+        
+        print(f"\n✓ Bin {bin_idx} completed in {elapsed_time:.2f} seconds")
+        print(f"  Average time per sequence: {elapsed_time/len(seqs):.3f} seconds")
+        print(f"  Overall progress: {processed_sequences}/{total_sequences} "
+              f"({processed_sequences/total_sequences*100:.1f}%)")
+        
+        # ========== SAVE AFTER EACH BIN ==========
+        print(f"\n Saving embeddings after Bin {bin_idx}...")
+        
+        # Save individual bin
+        pkl_path, npz_path = save_embeddings(embeddings, output_dir, bin_idx=bin_idx)
+        print(f"  ✓ Bin {bin_idx} saved:")
+        print(f"    - {pkl_path}")
+        print(f"    - {npz_path}")
+        
+        # Save cumulative embeddings
+        pkl_path, npz_path = save_embeddings(all_embeddings, output_dir, is_cumulative=True)
+        print(f"  ✓ Cumulative embeddings saved:")
+        print(f"    - {pkl_path}")
+        print(f"    - {npz_path}")
+        
+        # Save metadata
+        metadata = {
+            'total_sequences': total_sequences,
+            'processed_sequences': processed_sequences,
+            'bins_completed': bin_idx + 1,
+            'last_bin': bin_idx,
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'total_embeddings': len(all_embeddings)
+        }
+        metadata_path = os.path.join(output_dir, "progress_metadata.pkl")
+        with open(metadata_path, 'wb') as f:
+            pickle.dump(metadata, f)
+        print(f"  ✓ Progress metadata saved")
+        print(f"  Total embeddings saved so far: {len(all_embeddings)}")
+        # =========================================
+        
+        # Clean up memory
+        del embeddings
+        gc.collect()
+        torch.cuda.empty_cache()
+        
+    except Exception as e:
+        print(f"\nERROR in Bin {bin_idx}: {str(e)}")
+        print(f"Progress saved up to Bin {bin_idx-1}")
+        print(f"You can resume from Bin {bin_idx} by re-running this cell")
+        raise
+
+print(f"\n{'='*80}")
+print(f"ALL BINS COMPLETED!")
+print(f"Total embeddings extracted: {len(all_embeddings)}")
+print(f"{'='*80}\n")
