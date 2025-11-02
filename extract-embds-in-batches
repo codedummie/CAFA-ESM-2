@@ -1,0 +1,52 @@
+def extract_embeddings_batch_with_progress(sequence_list, model, batch_converter, device, batch_size=8):
+    """
+    Extract embeddings for a batch of sequences with progress bar
+    
+    Args:
+        sequence_list: List of tuples (id, sequence)
+        model: ESM model
+        batch_converter: Batch converter from alphabet
+        device: torch device
+        batch_size: Number of sequences to process at once
+    
+    Returns:
+        Dictionary with sequence IDs as keys and embeddings as values
+    """
+    embeddings_dict = {}
+    
+    total_batches = (len(sequence_list) + batch_size - 1) // batch_size
+    
+    # Create progress bar
+    pbar = tqdm(total=len(sequence_list), desc="Processing sequences", 
+                unit="seq", ncols=100)
+    
+    # Process in batches
+    for i in range(0, len(sequence_list), batch_size):
+        batch = sequence_list[i:i+batch_size]
+        
+        # Convert batch
+        batch_labels, batch_strs, batch_tokens = batch_converter(batch)
+        batch_tokens = batch_tokens.to(device)
+        
+        # Extract embeddings
+        with torch.no_grad():
+            results = model(batch_tokens, repr_layers=[33], return_contacts=False)  # Use last layer
+            token_embeddings = results["representations"][33]
+        
+        # Store embeddings (mean pooling over sequence length, excluding special tokens)
+        for j, (label, seq) in enumerate(batch):
+            # Get embedding for this sequence (exclude BOS and EOS tokens)
+            seq_len = len(seq)
+            embedding = token_embeddings[j, 1:seq_len+1].mean(0)  # Mean pooling
+            embeddings_dict[label] = embedding.cpu().numpy()
+        
+        # Clear memory
+        del batch_tokens, results, token_embeddings
+        torch.cuda.empty_cache()
+        
+        # Update progress bar
+        pbar.update(len(batch))
+    
+    pbar.close()
+    
+    return embeddings_dict
