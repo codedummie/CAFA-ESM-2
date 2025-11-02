@@ -1,0 +1,6 @@
+# Final save
+print("💾 Creating final output files...")
+pkl_path, npz_path = save_embeddings(all_embeddings, output_dir, is_final=True)
+print(f"✓ Final embeddings saved:")
+print(f"  - {pkl_path}")
+print(f"  - {npz_path}")
