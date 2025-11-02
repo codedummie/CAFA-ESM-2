@@ -1,0 +1,27 @@
+# Specify your model path
+model_path = "models/esm2_t33_650M_UR50D.pt" #change model path
+
+# Load the model and alphabet from the local checkpoint, setting weights_only=False
+model, alphabet = esm.pretrained.load_model_and_alphabet_local(model_path)
+torch.load = original_torch_load
+
+# Set up the batch converter
+batch_converter = alphabet.get_batch_converter()
+
+# Move model to GPU if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+model.eval()  # Set to evaluation mode
+
+print(f"Model loaded successfully on {device}")
+
+
+# Path to your FASTA file
+fasta_path = "/embeddings/train_sequences.fasta" #change path to FASTA file
+
+# Read all sequences
+sequences = []
+for record in SeqIO.parse(fasta_path, "fasta"):
+    sequences.append((record.id, str(record.seq)))
+
+print(f"Total sequences loaded: {len(sequences)}")
